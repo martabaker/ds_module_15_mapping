@@ -120,12 +120,31 @@ function createMap(data){
   let myMap = L.map("map", {
     center: [40.7, -94.5],
     zoom: 4,
-    layers: [street, markers, circleLayer]
+    layers: [street, markers]
   });
 
 
   // Step 5: Add the Layer Control filter + legends as needed
   L.control.layers(baseLayers, overlayLayers).addTo(myMap);
+
+  // Add legend
+  // Code from documentation: https://leafletjs.com/examples/choropleth/
+  let legend = L.control({position: 'bottomright'});
+  legend.onAdd = function () {
+      let div = L.DomUtil.create('div', 'info legend'),
+          depth = [-10, 10, 30, 50, 70, 90];
+
+      // loop through our density intervals and generate a label with a colored square for each interval
+      for (let i = 0; i < depth.length; i++) {
+          div.innerHTML +=
+              '<i style="background:' + markerColor(depth[i] + 1) + '"></i> ' +
+              depth[i] + (depth[i + 1] ? '&ndash;' + depth[i + 1] + '<br>' : '+');
+      }
+      return div;
+  };
+
+  // Adds legend to the map
+  legend.addTo(myMap);
 }
 
 function init() {
