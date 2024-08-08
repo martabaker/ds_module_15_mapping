@@ -1,8 +1,10 @@
 // helper functions
 // creates the marker size based on earthquake magnitude
 function markerSize(mag){
+  // Sets default radius if no magnitude is provided
   let radius = 1;
 
+  // set radius size based on magnitude
   if (mag > 0){
     radius = mag ** 6.5
   };
@@ -11,7 +13,7 @@ function markerSize(mag){
 };
 
 function markerColor(depth){
-  // set base color
+  // set default color if no depth is provided
   let color = 'black';
 
   // set color based on depth of earthquake
@@ -33,8 +35,9 @@ function markerColor(depth){
 };
 
 // function to create the map
-function createMap(data){
+function createMap(data, geoData){
   // base layers
+  // Define variables for the tile layers
   let street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   })
@@ -43,7 +46,7 @@ function createMap(data){
     attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
   });
 
-  // Create the overlay layers
+  // Overlay layers
   let markers = L.markerClusterGroup();
   let heatArray = [];
   let circleArray = [];
@@ -53,20 +56,21 @@ function createMap(data){
     let location = row.geometry;
 
     if (location) {
-      // extract coord
+      // extract coordinates
+      // geoJSON lists coordinates as (longitude, latitude), need to switch to (latitude, longitude)
       let point = [location.coordinates[1], location.coordinates[0]];
 
-      // make marker
+      // make markers
       let marker = L.marker(point);
       let popup = `<h3>${row.properties.place}</h3><hr><h5>Magnitude: ${row.properties.mag} | Depth: ${location.coordinates[2]}</h5>`;
       marker.bindPopup(popup);
       markers.addLayer(marker);
 
-      // add to heatmap
+      // add to heatmap to relevant list
       heatArray.push(point);
 
-      // Create circle
-      // define marker (in this case a circle)
+      // Create circle marker
+      // Adjust color, fill color and radius based on depth and magnitude
       let circleMarker = L.circle(point, {
         fillOpacity: 0.75,
         color: markerColor(location.coordinates[2]),
@@ -74,11 +78,11 @@ function createMap(data){
         radius: markerSize(row.properties.mag)
       }).bindPopup(popup);
 
+      // Add circle markers to relevant list
       circleArray.push(circleMarker);
     }
   }
   
-  // create layer
   // create heat layer and adjust style accordingly
   let heatLayer = L.heatLayer(heatArray, {
     radius: 10,
@@ -90,41 +94,35 @@ function createMap(data){
   // create marker layer
   let circleLayer = L.layerGroup(circleArray);
 
-  // // Create the overlay layer
-  // let geoLayer = L.geoJSON(geoData, {
-  //   style: function(feature){
-  //     return {
-  //       color: '#1B1B1B',
-  //       fillColor: chooseColor(feature.properties.borough),
-  //       fillOpacity: .5,
-  //       weight: 1.5
-  //   }},
-  //   onEachFeature: onEachFeature
-  // });
+  // Create the geoLayer housing the tectonic plates
+  let geoLayer = L.geoJSON(geoData, {
+        color: '#B35B9D',
+        weight: 1.5
+  });
   
-  // Step 3: BUILD the Layer Controls
-
-  // Only one base layer can be shown at a time.
+  // Base Layer Dict
   let baseLayers = {
     Street: street,
     Topography: topo
   };
 
+  // Overlay Layer Dict
   let overlayLayers = {
     Markers: markers,
     Heatmap: heatLayer,
-    Circles: circleLayer
+    Circles: circleLayer,
+    "Tectonic Plates": geoLayer
   }
 
-  // Step 4: INIT the Map
+  // Initialize the map
   let myMap = L.map("map", {
     center: [40.7, -94.5],
     zoom: 4,
-    layers: [street, markers]
+    layers: [street, markers, geoLayer]
   });
 
 
-  // Step 5: Add the Layer Control filter + legends as needed
+  // Add the Layer Control filter
   L.control.layers(baseLayers, overlayLayers).addTo(myMap);
 
   // Add legend
@@ -134,7 +132,7 @@ function createMap(data){
       let div = L.DomUtil.create('div', 'info legend'),
           depth = [-10, 10, 30, 50, 70, 90];
 
-      // loop through our density intervals and generate a label with a colored square for each interval
+      // Loop through the depth intervals and generate a label with a colored square for each interval
       for (let i = 0; i < depth.length; i++) {
           div.innerHTML +=
               '<i style="background:' + markerColor(depth[i] + 1) + '"></i> ' +
@@ -151,11 +149,15 @@ function init() {
   // Assemble the API query URL.
   // url 1 represents all earthquakes that happened in the past month
   let url = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.geojson';
-  // let url2 = "https://2u-data-curriculum-team.s3.amazonaws.com/dataviz-classroom/v1.1/15-Mapping-Web/nyc.geojson";
+  let url2 = "https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_boundaries.json";
 
   d3.json(url).then(function (data) {
-  //   d3.json(url2).then(function(geoData){
-      createMap(data.features);
+    // variable for data.features
+    let features = data.features
+
+    d3.json(url2).then(function(geoData){
+      createMap(features, geoData);
+    });
   });
 }
 
