@@ -1,4 +1,38 @@
+// helper functions
+// creates the marker size based on earthquake magnitude
+function markerSize(mag){
+  let radius = 1;
 
+  if (mag > 0){
+    radius = mag ** 6.5
+  };
+
+  return radius
+};
+
+function markerColor(depth){
+  // set base color
+  let color = 'black';
+
+  // set color based on depth of earthquake
+  if (depth <= 10){
+    color='#58EFEC';
+  } else if (depth <= 30){
+    color='#75D2DA';
+  } else if (depth <= 50){
+    color='#92B4C7';
+  } else if (depth <= 70){
+    color='#AE97B5';
+  } else if (depth <= 90){
+    color='#CB79A2';
+  } else {
+    color='#E85C90';
+  }
+
+  return color
+};
+
+// function to create the map
 function createMap(data){
   // base layers
   let street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -24,7 +58,7 @@ function createMap(data){
 
       // make marker
       let marker = L.marker(point);
-      let popup = `<h3>${row.properties.place}</h3><hr><h5>Magnitude: ${row.properties.mag}</h5>`;
+      let popup = `<h3>${row.properties.place}</h3><hr><h5>Magnitude: ${row.properties.mag} | Depth: ${location.coordinates[2]}</h5>`;
       marker.bindPopup(popup);
       markers.addLayer(marker);
 
@@ -35,9 +69,9 @@ function createMap(data){
       // define marker (in this case a circle)
       let circleMarker = L.circle(point, {
         fillOpacity: 0.75,
-        // color: chooseColor(location.coordinates[2]),
-        // fillColor: chooseColor(location.coordinates[2]),
-        // radius: row.properties.mag
+        color: markerColor(location.coordinates[2]),
+        fillColor: markerColor(location.coordinates[2]),
+        radius: markerSize(row.properties.mag)
       }).bindPopup(popup);
 
       circleArray.push(circleMarker);
@@ -45,11 +79,15 @@ function createMap(data){
   }
   
   // create layer
+  // create heat layer and adjust style accordingly
   let heatLayer = L.heatLayer(heatArray, {
-    radius: 25,
-    blur: 20
+    radius: 10,
+    minOpacity: 0.5,
+    maxZoom: 11,
+    blur: 15
   });
 
+  // create marker layer
   let circleLayer = L.layerGroup(circleArray);
 
   // // Create the overlay layer
@@ -82,7 +120,7 @@ function createMap(data){
   let myMap = L.map("map", {
     center: [40.7, -94.5],
     zoom: 4,
-    layers: [street, markers]
+    layers: [street, markers, circleLayer]
   });
 
 
