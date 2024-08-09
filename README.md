@@ -23,3 +23,6 @@ Mapping Homework
 ![Demonstration of Website Functionality](Images/map.gif)
 --
 ## Sources:
+1. https://leafletjs.com/examples/choropleth/
+2. https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.geojson
+3. https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_boundaries.json
